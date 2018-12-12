@@ -92,6 +92,7 @@ describe('adding a new user', async () => {
     const usersAfterOperation = await helper.usersInDb()
     expect(usersAfterOperation.length).toBe(usersInitially.length)
   })
+  
 })
 
 afterAll(() => {

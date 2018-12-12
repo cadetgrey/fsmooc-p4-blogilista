@@ -1,33 +1,53 @@
 const blogsRouter = require('express').Router()
+const jwt = require('jsonwebtoken')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 
 blogsRouter.get('/', async (req, res) => {
-  const blogs = await Blog.find({})
-  res.json(blogs)
+  const blogs = await Blog
+    .find({})
+    .populate('user', { username: 1, name: 1 })
+  res.json(blogs.map(Blog.format))
 })
 
 blogsRouter.post('/', async (req, res) => {
-  try {
-    const body = req.body
+  const body = req.body
 
-    // tänne validaatioita tai jotain, lunttaa kolmososasta
-    // validaatiot ja async/await?
+  try {
+    const decodedToken = jwt.verify(req.token, process.env.SECRET)
+    console.log(decodedToken)
+
+    // validation
+    if (!req.token || !decodedToken.id) {
+      return res.status(401).json({ error: 'missing or invalid token' })
+    }
+
     if (!body.title || !body.url) {
       return res.status(400).json({ error: 'mandatory information missing, check title and url' })
     }
+
+    const user = await User.findById(decodedToken.id)
 
     const blog = new Blog({
       title: body.title,
       author: body.author,
       url: body.url,
-      likes: body.likes || 0
+      likes: body.likes || 0,
+      user: user._id
     })
 
     const savedBlog = await blog.save()
-    res.status(201).json(savedBlog)
+
+    user.blogs = user.blogs.concat(savedBlog._id)
+    await user.save()
+
+    res.status(201).json(Blog.format(savedBlog))
   } catch (error) {
-    console.log(error)
-    res.status(500).send({ error })
+    if (error.name === 'JsonWebTokenError') {
+      res.status(401).json({ error: error.message })
+    } else {
+      res.status(500).send({ error: error.message })
+    }
   }
 })
 
@@ -45,11 +65,26 @@ blogsRouter.put('/:id', async (req, res) => {
 
 blogsRouter.delete('/:id', async (req, res) => {
   try {
-    await Blog.findByIdAndRemove(req.params.id)
-    res.status(204).end()
+    const blog = await Blog.findById(req.params.id)
+    const decodedToken = jwt.verify(req.token, process.env.SECRET)
+
+    if (!req.token || !decodedToken.id) {
+      return res.status(401).json({ error: 'missing or invalid token' })
+    }
+
+    if (blog.user.toString() !== decodedToken.id) {
+      return res.status(401).json({ error: 'unauthorised user' })
+    }
+
+    await blog.remove()
+    return res.status(204).end()
   } catch (error) {
     console.log(error)
-    res.status(400).json({ error: 'id not found'})
+    if (error.name === 'JsonWebTokenError') {
+      res.status(401).json({ error: error.message })
+    } else {
+      res.status(500).send({ error: error.message})
+    }
   }
 })
 

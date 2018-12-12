@@ -5,7 +5,11 @@ const User = require('../models/user')
 
 usersRouter.get('/', async (req, res) => {
   try {
-    const users = await User.find({})
+    const users = await User
+      .find({})
+      .populate('blogs', { _id, title, author, url, likes: 1 })
+
+    console.log(users)
     res.json(users.map(User.format))
   } catch (err) {
     console.log(err)
@@ -22,23 +26,27 @@ usersRouter.post('/', async (req, res) => {
     const usernameIsUnique = userByUsername.length === 0
 
     if (!usernameIsUnique) {
-      res.status(400).json({ error: 'Username already exists' })
-    } else if (body.password.length < 3) {
-      res.status(400).json({ error: 'Password must be over 3 characters long' })
-    } else {
-      const saltRounds = 10
-      const passwordHash = await bcrypt.hash(body.password, saltRounds)
-
-      const user = new User({
-        username: body.username,
-        name: body.name,
-        passwordHash,
-        isOfAge: body.isOfAge || true
-      })
-
-      const savedUser = await user.save()
-      res.status(201).json(User.format(savedUser))
+      return res.status(400).json({ error: 'Username already exists' })
     }
+
+    if (body.password.length < 3) {
+      return res.status(400).json({ error: 'Password must be over 3 characters long' })
+    }
+
+    // DRY this, put the function somewhere that isn't tests_helper
+    const saltRounds = 10
+    const passwordHash = await bcrypt.hash(body.password, saltRounds)
+
+    const user = new User({
+      username: body.username,
+      name: body.name,
+      passwordHash,
+      isOfAge: body.isOfAge || true
+    })
+
+    const savedUser = await user.save()
+    res.status(201).json(User.format(savedUser))
+
 
   } catch (error) {
     console.log(error)
