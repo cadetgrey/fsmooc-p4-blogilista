@@ -7,7 +7,6 @@ const userSchema = new mongoose.Schema({
   isOfAge: Boolean
 })
 
-
 userSchema.statics.format = (user) => {
   return {
     username: user.username,

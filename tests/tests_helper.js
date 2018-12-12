@@ -1,5 +1,6 @@
 const Blog = require('../models/blog')
 const User = require('../models/user')
+const bcrypt = require('bcrypt')
 
 const initialData = {
   blogs: [
@@ -42,6 +43,18 @@ const usersInDb = async () => {
   return users.map(User.format)
 }
 
+const createUser = async (userInfo) => {
+  const saltRounds = 10
+  const passwordHash = await bcrypt.hash(userInfo.password, saltRounds)
+
+  return new User({
+    username: userInfo.username,
+    name: userInfo.name,
+    passwordHash,
+    isOfAge: userInfo.isOfAge || true
+  })
+}
+
 const blogTitles = (blogs) => {
   return blogs.map(blog => blog.title)
 }
@@ -49,6 +62,7 @@ const blogTitles = (blogs) => {
 module.exports = {
   initialData,
   blogsInDb,
-  usersInDb
+  usersInDb,
+  createUser
 }
 

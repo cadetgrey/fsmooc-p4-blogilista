@@ -5,9 +5,14 @@ const User = require('../models/user')
 const helper = require('./tests_helper')
 
 describe('when there are users saved in the database', async () => {
-
-  // figure out how to create proper users here (password hash etc)
   beforeAll(async () => {
+    await User.deleteMany({})
+
+    // clean this up somehow ;_;
+    const userObjects = await Promise.all(helper.initialData.users.map(user => helper.createUser(user)))
+
+    const promiseArray = userObjects.map(user => user.save())
+    await Promise.all(promiseArray)
   })
 
   test('GET request to /api/users returns a list of all users as JSON', async () => {
@@ -30,8 +35,14 @@ describe('when there are users saved in the database', async () => {
 })
 
 describe('adding a new user', async () => {
+
+  beforeAll(async () => {
+    await User.deleteOne({ username: 'keijo11'})
+  })
+
   test('POST request to /api/users successfully adds a new user and returns 201', async () => {
     const usersInitially = await helper.usersInDb()
+    console.log(usersInitially)
 
     const newUser = {
       username: 'esimerkki',
