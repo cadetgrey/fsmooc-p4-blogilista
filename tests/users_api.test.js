@@ -16,8 +16,7 @@ describe('when there are users saved in the database', async () => {
   })
 
   test('GET request to /api/users returns a list of all users as JSON', async () => {
-    const usersInitially = await helper.usersInDb() // write helpers, refactor helper file if necessary
-    console.log(usersInitially)
+    const usersInitially = await helper.usersInDb()
 
     const response = await api
       .get('/api/users')
@@ -35,21 +34,20 @@ describe('when there are users saved in the database', async () => {
 })
 
 describe('adding a new user', async () => {
+  const newUser = {
+    username: 'esimerkki',
+    name: 'kayttaja',
+    password: 'sanasala',
+    isOfAge: false
+  }
 
   beforeAll(async () => {
-    await User.deleteOne({ username: 'keijo11'})
+    await User.deleteMany({})
   })
 
   test('POST request to /api/users successfully adds a new user and returns 201', async () => {
     const usersInitially = await helper.usersInDb()
     console.log(usersInitially)
-
-    const newUser = {
-      username: 'esimerkki',
-      name: 'kayttaja',
-      password: 'sanasala',
-      isOfAge: false
-    }
 
     const response = await api
       .post('/api/users')
@@ -62,6 +60,37 @@ describe('adding a new user', async () => {
 
     expect(response.body.username).toBe(newUser.username)
     expect(response.body.name).toBe(newUser.name)
+  })
+
+  test('trying to add a user with a username that already exists fails and returns 400', async () => {
+    const usersInitially = await helper.usersInDb()
+
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+      .expect(res => res.error = 'Username already exists')
+
+    const usersAfterOperation = await helper.usersInDb()
+    expect(usersAfterOperation.length).toBe(usersInitially.length)
+  })
+
+  test('trying to add a user with a password length of under 3 fails and returns 400', async () => {
+    const usersInitially = await helper.usersInDb()
+
+    const anotherUser = helper.initialData.users[0]
+    anotherUser.password = '12'
+
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+      .expect(res => res.error = 'Password must be over 3 characters long')
+
+    const usersAfterOperation = await helper.usersInDb()
+    expect(usersAfterOperation.length).toBe(usersInitially.length)
   })
 })
 

@@ -19,31 +19,27 @@ usersRouter.post('/', async (req, res) => {
 
     // validation
     const userByUsername = await User.find({ username: body.username })
-    console.log(userByUsername)
     const usernameIsUnique = userByUsername.length === 0
-    
+
     if (!usernameIsUnique) {
       res.status(400).json({ error: 'Username already exists' })
-    }
-
-    if (body.password.length < 3) {
-      console.log('pwdcheck')
+    } else if (body.password.length < 3) {
       res.status(400).json({ error: 'Password must be over 3 characters long' })
+    } else {
+      const saltRounds = 10
+      const passwordHash = await bcrypt.hash(body.password, saltRounds)
+
+      const user = new User({
+        username: body.username,
+        name: body.name,
+        passwordHash,
+        isOfAge: body.isOfAge || true
+      })
+
+      const savedUser = await user.save()
+      res.status(201).json(User.format(savedUser))
     }
 
-    const saltRounds = 10
-    const passwordHash = await bcrypt.hash(body.password, saltRounds)
-
-    const user = new User({
-      username: body.username,
-      name: body.name,
-      passwordHash,
-      isOfAge: body.isOfAge || true
-    })
-
-    const savedUser = await user.save()
-
-    res.status(201).json(User.format(savedUser))
   } catch (error) {
     console.log(error)
     res.status(500).json({ error: error.message || 'something went wrong' })
