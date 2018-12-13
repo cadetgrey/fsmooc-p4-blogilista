@@ -15,7 +15,6 @@ blogsRouter.post('/', async (req, res) => {
 
   try {
     const decodedToken = jwt.verify(req.token, process.env.SECRET)
-    console.log(decodedToken)
 
     // validation
     if (!req.token || !decodedToken.id) {
@@ -54,9 +53,9 @@ blogsRouter.post('/', async (req, res) => {
 blogsRouter.put('/:id', async (req, res) => {
   try {
     const changedBlog = { ...req.body }
-
-    const returnedBlog = await Blog.findOneAndUpdate(req.params.id, changedBlog, { new: true })
-    res.status(200).json(returnedBlog)
+    const returnedBlog = await Blog.findByIdAndUpdate(req.params.id, changedBlog, { new: true })
+    
+    res.status(200).json(Blog.format(returnedBlog))
   } catch (error) {
     console.log(error)
     res.status(400).send({ error: 'id not found' })

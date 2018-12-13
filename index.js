@@ -10,6 +10,7 @@ const blogsRouter = require('./controllers/blogs')
 const usersRouter = require('./controllers/users')
 const loginRouter = require('./controllers/login')
 
+
 mongoose
   .connect(config.mongoUrl, { useNewUrlParser: true })
   .then(() => {

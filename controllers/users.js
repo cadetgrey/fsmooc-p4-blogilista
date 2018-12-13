@@ -7,7 +7,7 @@ usersRouter.get('/', async (req, res) => {
   try {
     const users = await User
       .find({})
-      .populate('blogs', { _id, title, author, url, likes: 1 })
+      .populate('blogs', { id: 1, title: 1, author: 1, url: 1, likes: 1 })
 
     console.log(users)
     res.json(users.map(User.format))
