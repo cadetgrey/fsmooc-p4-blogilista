@@ -46,8 +46,6 @@ usersRouter.post('/', async (req, res) => {
 
     const savedUser = await user.save()
     res.status(201).json(User.format(savedUser))
-
-
   } catch (error) {
     console.log(error)
     res.status(500).json({ error: error.message || 'something went wrong' })

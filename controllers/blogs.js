@@ -45,7 +45,7 @@ blogsRouter.post('/', async (req, res) => {
     if (error.name === 'JsonWebTokenError') {
       res.status(401).json({ error: error.message })
     } else {
-      res.status(500).send({ error: error.message })
+      res.status(500).json({ error: error.message })
     }
   }
 })
@@ -54,11 +54,11 @@ blogsRouter.put('/:id', async (req, res) => {
   try {
     const changedBlog = { ...req.body }
     const returnedBlog = await Blog.findByIdAndUpdate(req.params.id, changedBlog, { new: true })
-    
+
     res.status(200).json(Blog.format(returnedBlog))
   } catch (error) {
     console.log(error)
-    res.status(400).send({ error: 'id not found' })
+    res.status(400).json({ error: 'id not found' })
   }
 })
 
@@ -66,23 +66,25 @@ blogsRouter.delete('/:id', async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id)
     const decodedToken = jwt.verify(req.token, process.env.SECRET)
+    const blogIsOrphan = blog.user === null
 
     if (!req.token || !decodedToken.id) {
       return res.status(401).json({ error: 'missing or invalid token' })
     }
 
-    if (blog.user.toString() !== decodedToken.id) {
+    // pt5ex9: any logged in user can delete orphan entries
+    // -> checking for it before evaluating potential null
+    if (!blogIsOrphan && (blog.user.toString() === decodedToken.id)) {
       return res.status(401).json({ error: 'unauthorised user' })
     }
 
     await blog.remove()
     return res.status(204).end()
   } catch (error) {
-    console.log(error)
     if (error.name === 'JsonWebTokenError') {
       res.status(401).json({ error: error.message })
     } else {
-      res.status(500).send({ error: error.message})
+      res.status(500).json({ error: error.message })
     }
   }
 })
