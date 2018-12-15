@@ -57,7 +57,6 @@ blogsRouter.put('/:id', async (req, res) => {
 
     res.status(200).json(Blog.format(returnedBlog))
   } catch (error) {
-    console.log(error)
     res.status(400).json({ error: 'id not found' })
   }
 })
